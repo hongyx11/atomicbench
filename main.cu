@@ -68,7 +68,7 @@ double gettime(void)
 
 int main(int argc, char *argv[]){
   size_t n = atoi(argv[1]);
-  printf("number size %d cost mem %.5f GB \n", n, n*8/1000./1000./1000.);
+  printf("number size %lu cost mem %.5f GB \n", n, n*8/1000./1000./1000.);
   double * hptr = new double[n];
   double * hout = new double[128];
   // for(int j=0; j<n; j++) hptr[j] = (double)rand() / (double)RAND_MAX;
