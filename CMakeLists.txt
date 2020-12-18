@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18.0)
 
-PROJECT(AtomicAddtest C CUDA)
+PROJECT(AtomicAddtest CXX CUDA)
 
 # directly make an error if in-source build
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
@@ -25,8 +25,12 @@ link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 --shared --compiler-options '-fPIC' --compiler-options -Wall")
 message(STATUS "CUDA FLAGS: ${CMAKE_CUDA_FLAGS}")
 set(public_link_lib ${public_link_lib} cudart gomp)
-add_executable(${PROJECT_NAME} main.cu)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${public_link_lib})
-target_compile_definitions(${PROJECT_NAME} PUBLIC USE_DOUBLE)
-target_compile_definitions(${PROJECT_NAME} PUBLIC USE_ATOMIC)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CUDA_ARCHITECTURES 60 70 80)
+set(BINFILES atomickernel reducekernel)
+
+foreach(exec ${BINFILES})
+  add_executable(${exec} ${exec}.cu)
+  target_link_libraries(${exec} PUBLIC ${public_link_lib})
+  target_compile_definitions(${exec} PUBLIC USE_DOUBLE)
+  set_property(TARGET ${exec} PROPERTY CUDA_ARCHITECTURES 60 70 80)
+endforeach(exec)
+
