@@ -72,7 +72,15 @@ inline void initrandomdata(real *hptr, size_t n){
 }
 
 
-
+inline void showstat(real time, unsigned int n){
+  real bd;
+  #ifdef USE_FLOAT
+  bd = 2*(n)*4/ time / 1e9;
+  #else
+  bd = 2*(n)*8/ time / 1e9;
+  #endif 
+  printf(" kernel time is %.3f ms, memory bandwidth %.3f GB/s \n", time*1000., bd);
+}
 
 /**
 * CPU and GPU reduce sum implementation
@@ -89,7 +97,7 @@ inline real cpureduce(real *arr, size_t len){
 
 
 // atomic kernel 
-inline __global__ void atomickernel(real *arr, real *outarr){
+__global__ void atomickernel(real *arr, real *outarr){
   unsigned long int tId = threadIdx.x + (blockIdx.x * blockDim.x);
   atomicAdd(&outarr[tId % 128], arr[tId]);
 }
@@ -127,6 +135,10 @@ __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n){
   if(tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
+template<unsigned int blockSize, typename T>
+double gpureduce(T *g_idata, T *g_odata, unsigned int n){
+
+}
 
 
 #endif

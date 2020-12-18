@@ -28,14 +28,23 @@ int main(int argc, char *argv[]){
   size_t paramsize = 1;
   cudanew(&diarr, n); cudanew(&doarr, redcueslot * paramsize);
   cudamemcpy(diarr, hiarr, n);
-  cudasetandsyncdevice(0);
+  cudaEvent_t start, stop; cudaEventCreate(&start); cudaEventCreate(&stop);
+
   real t1 = gettime();
+  cudasetandsyncdevice(0);
   printf("\n we are using atomic operation \n");
+  cudaEventRecord(start);
+  cudaDeviceSynchronize();
   reduce6<128,real><<<gx,128,128*sizeof(real)>>>(diarr,doarr,n);
+  cudaDeviceSynchronize();
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+  float milliseconds = 0;
+  cudaEventElapsedTime(&milliseconds, start, stop);
   // get results back to cpu
   cudasetandsyncdevice(0);
   real t2 = gettime();
-  printf(" kernel time is %.6f ms \n", (t2 - t1)*1000. );
+  showstat(milliseconds * 1e-3, n);
   cudamemcpy(hout, doarr, redcueslot);
   real gpusum = 0.0;
   for(int j=0; j<redcueslot;j++) gpusum += hout[j];
