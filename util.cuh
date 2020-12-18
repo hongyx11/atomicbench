@@ -75,9 +75,9 @@ inline void initrandomdata(real *hptr, size_t n){
 inline void showstat(real time, unsigned int n){
   real bd;
   #ifdef USE_FLOAT
-  bd = 2*(n)*4/ time / 1e9;
+  bd = (n)*4/ time / 1e9;
   #else
-  bd = 2*(n)*8/ time / 1e9;
+  bd = (unsigned long int)(n)*8/ time / 1e9;
   #endif 
   printf(" kernel time is %.3f ms, memory bandwidth %.3f GB/s \n", time*1000., bd);
 }
@@ -103,9 +103,6 @@ __global__ void atomickernel(real *arr, real *outarr){
 }
 
 
-
-// reduce kernel
-
 template <unsigned int blockSize, typename T>
 __device__ void warpReduce(volatile T *sdata, unsigned int tid){
   if(blockSize >= 64) sdata[tid] += sdata[tid + 32];
@@ -118,6 +115,7 @@ __device__ void warpReduce(volatile T *sdata, unsigned int tid){
 
 template<unsigned int blockSize, typename T>
 __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n){
+
   extern __shared__ T sdata[];
   unsigned int tid = threadIdx.x;
   unsigned int i = blockIdx.x * (blockSize * 2) + tid;
@@ -131,8 +129,9 @@ __global__ void reduce6(T *g_idata, T *g_odata, unsigned int n){
   if(blockSize >= 512){if(tid < 256){sdata[tid] += sdata[tid+256];} __syncthreads();}
   if(blockSize >= 256){if(tid < 128){sdata[tid] += sdata[tid+128];} __syncthreads();}
   if(blockSize >= 128){if(tid < 64){sdata[tid] += sdata[tid+64];} __syncthreads();}
+
   if(tid < 32) warpReduce<blockSize,T>(sdata, tid);
-  if(tid == 0) g_odata[blockIdx.x] = sdata[0];
+  if(tid == 0) g_odata[blockIdx.x] = sdata[tid];
 }
 
 template<unsigned int blockSize, typename T>

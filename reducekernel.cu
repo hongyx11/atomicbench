@@ -19,8 +19,8 @@ int main(int argc, char *argv[]){
   real cpusum = cpureduce(hiarr, n);
   printf(" cpu sum is %f \n", cpusum);
 // prepare gpu kernel size
-  size_t bx = 128;
-  size_t gx = n / bx + (n%bx != 0);
+  const size_t bx = 128;
+  size_t gx = n / bx / 4 + (n%bx != 0);
   // prepare gpu memory
   real * diarr, *doarr; // gpu ptr
   real * hout = new real[gx]; // cpu ptr
@@ -28,11 +28,8 @@ int main(int argc, char *argv[]){
   size_t paramsize = 1;
   cudanew(&diarr, n); cudanew(&doarr, redcueslot * paramsize);
   cudamemcpy(diarr, hiarr, n);
+  printf("\n we are using reduce operation \n");
   cudaEvent_t start, stop; cudaEventCreate(&start); cudaEventCreate(&stop);
-
-  real t1 = gettime();
-  cudasetandsyncdevice(0);
-  printf("\n we are using atomic operation \n");
   cudaEventRecord(start);
   cudaDeviceSynchronize();
   reduce6<128,real><<<gx,128,128*sizeof(real)>>>(diarr,doarr,n);
@@ -41,9 +38,6 @@ int main(int argc, char *argv[]){
   cudaEventSynchronize(stop);
   float milliseconds = 0;
   cudaEventElapsedTime(&milliseconds, start, stop);
-  // get results back to cpu
-  cudasetandsyncdevice(0);
-  real t2 = gettime();
   showstat(milliseconds * 1e-3, n);
   cudamemcpy(hout, doarr, redcueslot);
   real gpusum = 0.0;

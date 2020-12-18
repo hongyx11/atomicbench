@@ -27,14 +27,20 @@ int main(int argc, char *argv[]){
   // prepare gpu kernel size
   size_t bx = 128;
   size_t gx = n / bx + (n%bx != 0);
-  cudasetandsyncdevice(0);
-  real t1 = gettime();
+  
   printf("\n we are using atomic operation \n");
+
+  cudaEvent_t start, stop; cudaEventCreate(&start); cudaEventCreate(&stop);
+  cudaEventRecord(start);
+  cudaDeviceSynchronize();
   atomickernel<<<gx,bx>>>(diarr,doarr);
+  cudaDeviceSynchronize();
+  cudaEventRecord(stop);
+  cudaEventSynchronize(stop);
+  float milliseconds = 0;
+  cudaEventElapsedTime(&milliseconds, start, stop);
+  showstat(milliseconds * 1e-3, n);
   // get results back to cpu
-  cudasetandsyncdevice(0);
-  real t2 = gettime();
-  printf(" kernel time is %.6f ms \n", (t2 - t1)*1000. );
   cudamemcpy(hout, doarr, 128);
   real gpusum = 0.0;
   for(int j=0; j<128;j++) gpusum += hout[j];
